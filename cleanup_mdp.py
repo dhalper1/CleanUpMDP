@@ -36,6 +36,8 @@ class CleanUpMDP(MDP):
         legal_states = [(x, y) for room in rooms for x, y in room.points_in_room]
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
+        self.rooms = rooms
+        self.doors = doors
 
     def _transition_func(self, state, action):
         # TODO ACCOUNT FOR PULL ACTION

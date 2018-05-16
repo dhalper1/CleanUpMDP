@@ -33,7 +33,6 @@ from simple_rl.tasks.grid_world import grid_visualizer
 four_room_mdp = FourRoomMDP(9, 9, goal_locs=[(9, 9), (5, 4)], gamma=0.95)
 
 # Run experiment and make plot.
-pygame.event.get()
-four_room_mdp.visualize_value()
-pygame.event.get()
+# four_room_mdp.visualize_value()
+four_room_mdp.visualize_interaction()
 # four_room_mdp.visualize_policy()
