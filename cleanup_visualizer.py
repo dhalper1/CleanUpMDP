@@ -132,7 +132,7 @@ def draw_state(screen,
 
                 block = cleanup_mdp.find_block(state.blocks, i + 1 - 1, height - j - 1)
                 # print(state)
-                print(block)
+                # print(block)
                 if block:
                     circle_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
                     block_rgb = _get_rgb(block.color)

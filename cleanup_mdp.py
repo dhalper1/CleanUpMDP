@@ -36,9 +36,8 @@ class CleanUpMDP(MDP):
         legal_states = [(x, y) for room in rooms for x, y in room.points_in_room]
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
-        # self.rooms = rooms
-        # self.doors = doors
-        # self.blocks = blocks
+        self.door_locs = set([(door.x, door.y) for door in doors])
+        # TODO CREATE A DICTIONARY FROM ROOMS TO LEGAL STATES IN ROOMS WITHOUT DOORS
 
     def _transition_func(self, state, action):
         dx, dy = self.transition(action)
@@ -48,13 +47,21 @@ class CleanUpMDP(MDP):
         if (new_x, new_y) not in self.legal_states:
             return copy
 
-        # TODO CHECK FOR NOT IN DOOR AND MAKE SURE NOT SWITCHING ROOMS
-
         blocks = self._account_for_blocks(new_x, new_y, state, action)
+        # print(blocks)
+        if not blocks:
+            return copy
         if blocks is not None:
-            copy.blocks = blocks
-            copy.x = new_x
-            copy.y = new_y
+            # print("here")
+            old_room = self.check_in_room(state.rooms, state.x, state.y)
+            new_room = self.check_in_room(state.rooms, new_x, new_y)
+            back_x = state.x - dx
+            back_y = state.y - dy
+            if (state.x, state.y) in self.door_locs or (new_x, new_y) in self.door_locs or \
+                    (back_x, back_y) in self.door_locs or old_room.__eq__(new_room):
+                copy.blocks = blocks
+                copy.x = new_x
+                copy.y = new_y
 
         # print("Agent " + str((copy.x, copy.y)))
         # print("Block " + str((copy.blocks[0].x, copy.blocks[0].y)))
@@ -80,15 +87,33 @@ class CleanUpMDP(MDP):
                 dx, dy = self.transition(action)
                 new_x = block.x + dx
                 new_y = block.y + dy
-                # TODO MAKE SURE NOT SWITCHING ROOMS
                 if (new_x, new_y) not in self.legal_states:
                     return None
                 else:
-                    block = block.copy()
-                    block.x = new_x
-                    block.y = new_y
-                    copy_blocks[i] = block
+                    back_x = block.x - dx
+                    back_y = block.y - dy
+                    # door_locs = set([(door.x, door.y) for door in state.doors])
+                    # print((new_x, new_y))
+                    if (block.x, block.y) in self.door_locs or (new_x, new_y) in self.door_locs or \
+                            (back_x, back_y) in self.door_locs:
+                        # print("this")
+                        # return False
+                        block = block.copy()
+                        block.x = new_x
+                        block.y = new_y
+                        copy_blocks[i] = block
+                    else:
+                        # print("room check")
+                        old_room = self.check_in_room(state.rooms, block.x, block.y)
+                        new_room = self.check_in_room(state.rooms, new_x, new_y)
+                        if old_room.__eq__(new_room):
+                            # return False
+                            block = block.copy()
+                            block.x = new_x
+                            block.y = new_y
+                            copy_blocks[i] = block
                     return copy_blocks
+        print("this")
         return copy_blocks
 
         # old_room = self.check_in_room(state, state.x, state.y)
@@ -181,8 +206,8 @@ class CleanUpMDP(MDP):
     @staticmethod
     def is_terminal(task, next_state):
         if task.block_name is None:
-            print(task)
-            [print(block) for block in next_state.blocks]
+            # print(task)
+            # [print(block) for block in next_state.blocks]
             task_block = [block for block in next_state.blocks if block.color == task.block_color][0]
         # elif self.task.block_name is None:
         else:
