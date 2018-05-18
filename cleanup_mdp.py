@@ -29,7 +29,7 @@ class CleanUpMDP(MDP):
             block_loc = [(x, y) for block in blocks for (x, y) in (block.x, block.y)]
             init_loc = random.choice(
                 [(x, y) for room in rooms for (x, y) in room.points_in_room if (x, y) not in block_loc])
-        self.init_state = CleanUpState(task, init_loc[0], init_loc[1], blocks=blocks, doors=doors, rooms=rooms) \
+        init_state = CleanUpState(task, init_loc[0], init_loc[1], blocks=blocks, doors=doors, rooms=rooms) \
             if init_state is None or rand_init else init_state
         self.cur_state = init_state
         MDP.__init__(self, self.ACTIONS, self._transition_func, self._reward_func, init_state=init_state, gamma=gamma)
@@ -38,6 +38,7 @@ class CleanUpMDP(MDP):
         self.legal_states = set(legal_states)
         self.rooms = rooms
         self.doors = doors
+        self.blocks = blocks
 
     def _transition_func(self, state, action):
         # TODO ACCOUNT FOR PULL ACTION
@@ -59,6 +60,13 @@ class CleanUpMDP(MDP):
         # print(str(copy))
 
         return copy
+
+    def find_block(self, x, y):
+        for block in self.blocks:
+            if x == block.x and y == block.y:
+                return block
+        return False
+
 
     def _account_for_blocks(self, x, y, state, action):
         copy_blocks = state.blocks[:]
@@ -169,6 +177,8 @@ class CleanUpMDP(MDP):
     @staticmethod
     def is_terminal(task, next_state):
         if task.block_name is None:
+            print(task)
+            [print(block) for block in next_state.blocks]
             task_block = [block for block in next_state.blocks if block.color == task.block_color][0]
         # elif self.task.block_name is None:
         else:
@@ -222,6 +232,7 @@ class CleanUpMDP(MDP):
     def visualize_interaction(self):
         from simple_rl.utils import mdp_visualizer as mdpv
         from cleanup_visualizer import draw_state
+        # print(self.init_state)
         mdpv.visualize_interaction(self, draw_state)
         input("Press anything to quit ")
 
@@ -231,9 +242,9 @@ if __name__ == "__main__":
     from cleanup_door import CleanUpDoor
     from cleanup_room import CleanUpRoom
 
-    task = CleanUpTask("blue", "red")
+    task = CleanUpTask("green", "red")
     room1 = CleanUpRoom("room1", [(x, y) for x in range(5) for y in range(3)], "blue")
-    block1 = CleanUpBlock("block1", 1, 1, color="blue")
+    block1 = CleanUpBlock("block1", 1, 1, color="green")
     room2 = CleanUpRoom("room2", [(x, y) for x in range(5, 10) for y in range(3)], color="red")
     rooms = [room1, room2]
     blocks = [block1]

@@ -74,7 +74,7 @@ def draw_state(screen,
     reg_font = pygame.font.SysFont("CMU Serif", font_size)
     cc_font = pygame.font.SysFont("Courier", font_size * 2 + 2)
 
-    room_locs = [(x + 1, y + 1) for room in cleanup_mdp.rooms for (x, y) in room.points_in_room]
+    # room_locs = [(x + 1, y + 1) for room in cleanup_mdp.rooms for (x, y) in room.points_in_room]
     door_locs = set([(door.x + 1, door.y + 1) for door in cleanup_mdp.doors])
 
     # Draw the static entities.
@@ -130,16 +130,22 @@ def draw_state(screen,
                         room_rgb = _get_rgb(room.color)
                         pygame.draw.rect(screen, room_rgb, top_left_point + (cell_width - 10, cell_height - 10), 0)
 
+                block = cleanup_mdp.find_block(i + 1 - 1, height - j - 1)
+                if block:
+                    circle_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
+                    block_rgb = _get_rgb(block.color)
+                    pygame.draw.circle(screen, block_rgb, circle_center, int(min(cell_width, cell_height) / 4.0))
+
                 # Current state.
-                if not show_value and (i + 1, height - j) == (state.x, state.y) and agent_shape is None:
+                if not show_value and (i + 1, height - j) == (state.x + 1, state.y + 1) and agent_shape is None:
                     tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
                     agent_shape = _draw_agent(tri_center, screen, base_size=min(cell_width, cell_height) / 2.5 - 8)
 
     if agent_shape is not None:
         # Clear the old shape.
         pygame.draw.rect(screen, (255, 255, 255), agent_shape)
-        top_left_point = width_buffer + cell_width * (state.x - 1), height_buffer + cell_height * (
-                height - state.y)
+        top_left_point = width_buffer + cell_width * ((state.x + 1) - 1), height_buffer + cell_height * (
+                height - (state.y + 1))
         tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
 
         # Draw new.
