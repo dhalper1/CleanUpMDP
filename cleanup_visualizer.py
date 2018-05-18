@@ -1,6 +1,7 @@
 # Python imports.
 from __future__ import print_function
 from collections import defaultdict
+
 try:
     import pygame
 except ImportError:
@@ -10,9 +11,11 @@ import sys
 
 # Other imports.
 from simple_rl.planning import ValueIteration
+from simple_rl.utils import mdp_visualizer as mdpv
+
 
 def _draw_state(screen,
-                cleaup_mdp,
+                cleanup_mdp,
                 state,
                 policy=None,
                 action_char_dict={},
@@ -60,8 +63,8 @@ def _draw_state(screen,
     width_buffer = scr_width / 10.0
     height_buffer = 30 + (scr_height / 10.0)  # Add 30 for title.
 
-    width = max(cleaup_mdp.legal_states, key=lambda tup: tup[0])[0]
-    height = max(cleaup_mdp.legal_states, key=lambda tup: tup[1])[1]
+    width = max(cleanup_mdp.legal_states, key=lambda tup: tup[0])[0]
+    height = max(cleanup_mdp.legal_states, key=lambda tup: tup[1])[1]
 
     cell_width = (scr_width - width_buffer * 2) / width
     cell_height = (scr_height - height_buffer * 2) / height
@@ -71,4 +74,94 @@ def _draw_state(screen,
     reg_font = pygame.font.SysFont("CMU Serif", font_size)
     cc_font = pygame.font.SysFont("Courier", font_size * 2 + 2)
 
-    # TODO WORKING HERE. FOLLOWING GRID_VISUALIZER
+    room_locs = [(x, y, room.color) for room in cleanup_mdp.rooms for (x, y) in room.points_in_room]
+    door_locs = set([(door.x, door.y) for door in cleanup_mdp.doors])
+
+
+    # Draw the static entities.
+    if draw_statics:
+        # For each row:
+        for i in range(width):
+            # For each column:
+            for j in range(height):
+
+                top_left_point = width_buffer + cell_width * i, height_buffer + cell_height * j
+                r = pygame.draw.rect(screen, (46, 49, 49), top_left_point + (cell_width, cell_height), 3)
+
+                # if policy and not grid_mdp.is_wall(i+1, height - j):
+                if policy and (i + 1, height - j) in cleanup_mdp.legal_states:
+                    a = policy_dict[i + 1][height - j]
+                    if a not in action_char_dict:
+                        text_a = a
+                    else:
+                        text_a = action_char_dict[a]
+                    text_center_point = int(top_left_point[0] + cell_width / 2.0 - 10), int(
+                        top_left_point[1] + cell_height / 3.0)
+                    text_rendered_a = cc_font.render(text_a, True, (46, 49, 49))
+                    screen.blit(text_rendered_a, text_center_point)
+
+                # if show_value and not grid_mdp.is_wall(i+1, grid_mdp.height - j):
+                if show_value and (i + 1, height - j) in cleanup_mdp.legal_states:
+                    # Draw the value.
+                    val = val_text_dict[i + 1][height - j]
+                    color = mdpv.val_to_color(val)
+                    pygame.draw.rect(screen, color, top_left_point + (cell_width, cell_height), 0)
+                    # text_center_point = int(top_left_point[0] + cell_width/2.0 - 10), int(top_left_point[1] + cell_height/7.0)
+                    # text = str(round(val,2))
+                    # text_rendered = reg_font.render(text, True, (46, 49, 49))
+                    # screen.blit(text_rendered, text_center_point)
+
+                # if grid_mdp.is_wall(i+1, grid_mdp.height - j):
+                if (i + 1, height - j) not in cleanup_mdp.legal_states:
+                    # Draw the walls.
+                    top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
+                    r = pygame.draw.rect(screen, (94, 99, 99), top_left_point + (cell_width - 10, cell_height - 10), 0)
+
+                if (i + 1, height - j) in door_locs:
+                    # Draw door
+                    circle_center = int(top_left_point[0] + cell_width / 2.0), int(min(cell_width, cell_height) / 4.0)
+                    circle_color = (66, 83, 244)
+                    pygame.draw.circle(screen, circle_color, circle_center, int(min(cell_width, cell_height) / 2.5 - 8))
+
+                elif (i + 1, height - j) in room_locs:  # I do elif because it shouldn't also be a door_loc
+                    # Draw room location
+                    circle_center = int(top_left_point[0] + cell_width / 2.0), int(min(cell_width, cell_height) / 4.0)
+                    circle_color = (224, 13, 38)
+                    pygame.draw.circle(screen, circle_color, circle_center, int(min(cell_width, cell_height) / 2.5 - 8))
+
+                # Current state.
+                if not show_value and (i + 1, height - j) == (state.x, state.y) and agent_shape is None:
+                    tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
+                    agent_shape = _draw_agent(tri_center, screen, base_size=min(cell_width, cell_height) / 2.5 - 8)
+
+    if agent_shape is not None:
+        # Clear the old shape.
+        pygame.draw.rect(screen, (255, 255, 255), agent_shape)
+        top_left_point = width_buffer + cell_width * (state.x - 1), height_buffer + cell_height * (
+                    height - state.y)
+        tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
+
+        # Draw new.
+        # if not show_value or policy is not None:
+        agent_shape = _draw_agent(tri_center, screen, base_size=min(cell_width, cell_height) / 2.5 - 16)
+
+    pygame.display.flip()
+
+    return agent_shape
+
+
+def _draw_agent(center_point, screen, base_size=20):
+    '''
+    Args:
+        center_point (tuple): (x,y)
+        screen (pygame.Surface)
+
+    Returns:
+        (pygame.rect)
+    '''
+    tri_bot_left = center_point[0] - base_size, center_point[1] + base_size
+    tri_bot_right = center_point[0] + base_size, center_point[1] + base_size
+    tri_top = center_point[0], center_point[1] - base_size
+    tri = [tri_bot_left, tri_top, tri_bot_right]
+    tri_color = (98, 140, 190)
+    return pygame.draw.polygon(screen, tri_color, tri)
