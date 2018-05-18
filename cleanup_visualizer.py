@@ -75,7 +75,7 @@ def draw_state(screen,
     cc_font = pygame.font.SysFont("Courier", font_size * 2 + 2)
 
     # room_locs = [(x + 1, y + 1) for room in cleanup_mdp.rooms for (x, y) in room.points_in_room]
-    door_locs = set([(door.x + 1, door.y + 1) for door in cleanup_mdp.doors])
+    door_locs = set([(door.x + 1, door.y + 1) for door in state.doors])
 
     # Draw the static entities.
     if draw_statics:
@@ -124,13 +124,15 @@ def draw_state(screen,
                     pygame.draw.rect(screen, door_color, top_left_point + (cell_width - 10, cell_height - 10), 0)
 
                 else:
-                    room = cleanup_mdp.check_in_room(i + 1 - 1, height - j - 1)  # Minus 1 for inconsistent x, y
+                    room = cleanup_mdp.check_in_room(state.rooms, i + 1 - 1, height - j - 1)  # Minus 1 for inconsistent x, y
                     if room:
                         top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
                         room_rgb = _get_rgb(room.color)
                         pygame.draw.rect(screen, room_rgb, top_left_point + (cell_width - 10, cell_height - 10), 0)
 
-                block = cleanup_mdp.find_block(i + 1 - 1, height - j - 1)
+                block = cleanup_mdp.find_block(state.blocks, i + 1 - 1, height - j - 1)
+                # print(state)
+                print(block)
                 if block:
                     circle_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
                     block_rgb = _get_rgb(block.color)

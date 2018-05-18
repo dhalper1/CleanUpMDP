@@ -36,18 +36,19 @@ class CleanUpMDP(MDP):
         legal_states = [(x, y) for room in rooms for x, y in room.points_in_room]
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
-        self.rooms = rooms
-        self.doors = doors
-        self.blocks = blocks
+        # self.rooms = rooms
+        # self.doors = doors
+        # self.blocks = blocks
 
     def _transition_func(self, state, action):
-        # TODO ACCOUNT FOR PULL ACTION
         dx, dy = self.transition(action)
         new_x = state.x + dx
         new_y = state.y + dy
         copy = state.copy()
         if (new_x, new_y) not in self.legal_states:
             return copy
+
+        # TODO CHECK FOR NOT IN DOOR AND MAKE SURE NOT SWITCHING ROOMS
 
         blocks = self._account_for_blocks(new_x, new_y, state, action)
         if blocks is not None:
@@ -61,8 +62,9 @@ class CleanUpMDP(MDP):
 
         return copy
 
-    def find_block(self, x, y):
-        for block in self.blocks:
+    @staticmethod
+    def find_block(blocks, x, y):
+        for block in blocks:
             if x == block.x and y == block.y:
                 return block
         return False
@@ -78,6 +80,7 @@ class CleanUpMDP(MDP):
                 dx, dy = self.transition(action)
                 new_x = block.x + dx
                 new_y = block.y + dy
+                # TODO MAKE SURE NOT SWITCHING ROOMS
                 if (new_x, new_y) not in self.legal_states:
                     return None
                 else:
@@ -137,8 +140,9 @@ class CleanUpMDP(MDP):
         # copy.blocks = blocks
         # return copy
 
-    def check_in_room(self, x, y):
-        for room in self.rooms:
+    @staticmethod
+    def check_in_room(rooms, x, y):
+        for room in rooms:
             if (x, y) in room.points_in_room:
                 return room
         return False
