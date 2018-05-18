@@ -24,20 +24,20 @@ class CleanUpMDP(MDP):
                  init_state=None):
         from cleanup_state import CleanUpState
         self.task = task
-        self.rand_init = rand_init
+        # self.rand_init = rand_init
         if rand_init:
             block_loc = [(x, y) for block in blocks for (x, y) in (block.x, block.y)]
             init_loc = random.choice(
                 [(x, y) for room in rooms for (x, y) in room.points_in_room if (x, y) not in block_loc])
-        init_state = CleanUpState(task, init_loc[0], init_loc[1], blocks=blocks, doors=doors, rooms=rooms) \
+        self.init_state = CleanUpState(task, init_loc[0], init_loc[1], blocks=blocks, doors=doors, rooms=rooms) \
             if init_state is None or rand_init else init_state
         self.cur_state = init_state
         MDP.__init__(self, self.ACTIONS, self._transition_func, self._reward_func, init_state=init_state, gamma=gamma)
         legal_states = [(x, y) for room in rooms for x, y in room.points_in_room]
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
-        # self.rooms = rooms
-        # self.doors = doors
+        self.rooms = rooms
+        self.doors = doors
 
     def _transition_func(self, state, action):
         # TODO ACCOUNT FOR PULL ACTION
@@ -129,9 +129,8 @@ class CleanUpMDP(MDP):
         # copy.blocks = blocks
         # return copy
 
-    @staticmethod
-    def check_in_room(state, x, y):
-        for room in state.rooms:
+    def check_in_room(self, x, y):
+        for room in self.rooms:
             if (x, y) in room.points_in_room:
                 return room
         return False
@@ -188,6 +187,11 @@ class CleanUpMDP(MDP):
         # TODO WRITE OUT LATER
         return "CleanUpMDP: " + str(self.task)
 
+    # def get_init_state(self):
+    #     return self.init_state
+
+    def get_actions(self):
+        return self.ACTIONS
 
     def reset(self):
         self.cur_state = copy.deepcopy(self.init_state)
@@ -196,6 +200,30 @@ class CleanUpMDP(MDP):
             new_loc = random.choice([(x, y) for room in self.init_state.rooms for (x, y) in
                                      room.points_in_room if (x, y) not in block_loc])
             self.cur_state.x, self.cur_state.y = new_loc
+
+    def visualize_agent(self, agent):
+        from simple_rl.utils import mdp_visualizer as mdpv
+        from cleanup_visualizer import draw_state
+        mdpv.visualize_agent(self, agent, draw_state)
+        input("Press anything to quit ")
+
+    def visualize_value(self):
+        from simple_rl.utils import mdp_visualizer as mdpv
+        from cleanup_visualizer import draw_state
+        mdpv.visualize_value(self, draw_state)
+        input("Press anything to quit ")
+
+    def visualize_learning(self, agent, delay=0.0):
+        from simple_rl.utils import mdp_visualizer as mdpv
+        from cleanup_visualizer import draw_state
+        mdpv.visualize_learning(self, agent, draw_state, delay=delay)
+        input("Press anything to quit")
+
+    def visualize_interaction(self):
+        from simple_rl.utils import mdp_visualizer as mdpv
+        from cleanup_visualizer import draw_state
+        mdpv.visualize_interaction(self, draw_state)
+        input("Press anything to quit ")
 
 
 if __name__ == "__main__":
@@ -211,6 +239,7 @@ if __name__ == "__main__":
     blocks = [block1]
     doors = [CleanUpDoor(4, 2)]
     mdp = CleanUpMDP(task, rooms=rooms, doors=doors, blocks=blocks)
+    mdp.visualize_interaction()
 
     # vi = ValueIteration(mdp)
     # vi.run_vi()
@@ -225,12 +254,12 @@ if __name__ == "__main__":
     #     print("block: " + str((state_seq[i].blocks[0].x, state_seq[i].blocks[0].y)))
     #     # print("\t", action_seq[i], state_seq[i])
 
-    ql_agent = QLearningAgent(actions=mdp.get_actions())
-    rand_agent = RandomAgent(actions=mdp.get_actions())
-    delayed_q = DelayedQAgent(actions=mdp.get_actions())
-    rmax_agent = RMaxAgent(actions=mdp.get_actions())
-    run_agents_on_mdp([ql_agent, rand_agent, delayed_q, rmax_agent], mdp, instances=5, episodes=100, steps=40,
-                      reset_at_terminal=True, verbose=False)
+    # ql_agent = QLearningAgent(actions=mdp.get_actions())
+    # rand_agent = RandomAgent(actions=mdp.get_actions())
+    # delayed_q = DelayedQAgent(actions=mdp.get_actions())
+    # rmax_agent = RMaxAgent(actions=mdp.get_actions())
+    # run_agents_on_mdp([ql_agent, rand_agent, delayed_q, rmax_agent], mdp, instances=5, episodes=100, steps=40,
+    #                   reset_at_terminal=True, verbose=False)
 
 
 
