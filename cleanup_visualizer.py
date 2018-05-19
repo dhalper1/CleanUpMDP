@@ -78,6 +78,8 @@ def draw_state(screen,
     door_locs = set([(door.x + 1, door.y + 1) for door in state.doors])
 
     # Draw the static entities.
+    print(draw_statics)
+    draw_statics = True
     if draw_statics:
         # For each row:
         for i in range(width):

@@ -33,6 +33,8 @@ class CleanUpMDP(MDP):
             if init_state is None or rand_init else init_state
         self.cur_state = init_state
         MDP.__init__(self, self.ACTIONS, self._transition_func, self._reward_func, init_state=init_state, gamma=gamma)
+
+        # The following lines are used for efficiency
         legal_states = [(x, y) for room in rooms for x, y in room.points_in_room]
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
@@ -47,8 +49,9 @@ class CleanUpMDP(MDP):
         if (new_x, new_y) not in self.legal_states:
             return copy
 
+        # TODO There is a bug where the agent can become the block's location if it's at a wall
         blocks = self._account_for_blocks(new_x, new_y, state, action)
-        # print(blocks)
+        print(blocks)
         if not blocks:
             return copy
         if blocks is not None:
@@ -76,7 +79,6 @@ class CleanUpMDP(MDP):
                 return block
         return False
 
-
     def _account_for_blocks(self, x, y, state, action):
         copy_blocks = state.blocks[:]
         if x == state.x and y == state.y:
@@ -92,12 +94,8 @@ class CleanUpMDP(MDP):
                 else:
                     back_x = block.x - dx
                     back_y = block.y - dy
-                    # door_locs = set([(door.x, door.y) for door in state.doors])
-                    # print((new_x, new_y))
                     if (block.x, block.y) in self.door_locs or (new_x, new_y) in self.door_locs or \
                             (back_x, back_y) in self.door_locs:
-                        # print("this")
-                        # return False
                         block = block.copy()
                         block.x = new_x
                         block.y = new_y
@@ -113,7 +111,6 @@ class CleanUpMDP(MDP):
                             block.y = new_y
                             copy_blocks[i] = block
                     return copy_blocks
-        print("this")
         return copy_blocks
 
         # old_room = self.check_in_room(state, state.x, state.y)
@@ -195,7 +192,6 @@ class CleanUpMDP(MDP):
         # for task in self.tasks:
         # task_block = None
 
-
         # if task_room.contains(task_block):
         #     print("It successfully got to the goal")
         # print(10.0 if task_room.contains(task_block) else 0.0)
@@ -229,8 +225,8 @@ class CleanUpMDP(MDP):
     # def get_init_state(self):
     #     return self.init_state
 
-    def get_actions(self):
-        return self.ACTIONS
+    # def get_actions(self):
+    #     return self.ACTIONS
 
     def reset(self):
         self.cur_state = copy.deepcopy(self.init_state)
@@ -300,16 +296,6 @@ if __name__ == "__main__":
     # rmax_agent = RMaxAgent(actions=mdp.get_actions())
     # run_agents_on_mdp([ql_agent, rand_agent, delayed_q, rmax_agent], mdp, instances=5, episodes=100, steps=40,
     #                   reset_at_terminal=True, verbose=False)
-
-
-
-
-
-
-
-
-
-
 
     # def _reward_func(self, state, action):
     #     if self.is_goal_state(state, action):
