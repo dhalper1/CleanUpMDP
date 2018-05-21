@@ -44,6 +44,7 @@ class CleanUpMDP(MDP):
         # TODO CREATE A DICTIONARY FROM ROOMS TO LEGAL STATES IN ROOMS WITHOUT DOORS
 
     def _transition_func(self, state, action):
+        # TODO NOTE.  IT'S NOT POSSIBLE TO MOVE MULTIPLE BLOCKS AT ONCE AS OF NOW
         dx, dy = self.transition(action)
         new_x = state.x + dx
         new_y = state.y + dy
@@ -51,7 +52,6 @@ class CleanUpMDP(MDP):
         if (new_x, new_y) not in self.legal_states:
             return copy
 
-        # TODO There is a bug where the agent can become the block's location if it's at a wall
         blocks, i = self._account_for_blocks(new_x, new_y, state, action)
         # print(blocks)
         if not blocks:
