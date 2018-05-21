@@ -39,6 +39,8 @@ class CleanUpMDP(MDP):
         legal_states.extend([(door.x, door.y) for door in doors])
         self.legal_states = set(legal_states)
         self.door_locs = set([(door.x, door.y) for door in doors])
+        self.width = max(self.legal_states, key=lambda tup: tup[0])[0] + 1
+        self.height = max(self.legal_states, key=lambda tup: tup[1])[1] + 1
         # TODO CREATE A DICTIONARY FROM ROOMS TO LEGAL STATES IN ROOMS WITHOUT DOORS
 
     def _transition_func(self, state, action):
@@ -50,12 +52,17 @@ class CleanUpMDP(MDP):
             return copy
 
         # TODO There is a bug where the agent can become the block's location if it's at a wall
-        blocks = self._account_for_blocks(new_x, new_y, state, action)
-        print(blocks)
+        blocks, i = self._account_for_blocks(new_x, new_y, state, action)
+        # print(blocks)
         if not blocks:
             return copy
         if blocks is not None:
             # print("here")
+            # if i < 0:
+            #     return copy
+            if i >= 0 and blocks[i].x == state.blocks[i].x and blocks[i].y == state.blocks[i].y:
+                return copy
+
             old_room = self.check_in_room(state.rooms, state.x, state.y)
             new_room = self.check_in_room(state.rooms, new_x, new_y)
             back_x = state.x - dx
@@ -82,7 +89,7 @@ class CleanUpMDP(MDP):
     def _account_for_blocks(self, x, y, state, action):
         copy_blocks = state.blocks[:]
         if x == state.x and y == state.y:
-            return copy_blocks
+            return copy_blocks, -1
         for i in range(len(state.blocks)):
             block = state.blocks[i]
             if x == block.x and y == block.y:
@@ -90,7 +97,7 @@ class CleanUpMDP(MDP):
                 new_x = block.x + dx
                 new_y = block.y + dy
                 if (new_x, new_y) not in self.legal_states:
-                    return None
+                    return None, -1
                 else:
                     back_x = block.x - dx
                     back_y = block.y - dy
@@ -110,57 +117,8 @@ class CleanUpMDP(MDP):
                             block.x = new_x
                             block.y = new_y
                             copy_blocks[i] = block
-                    return copy_blocks
-        return copy_blocks
-
-        # old_room = self.check_in_room(state, state.x, state.y)
-        # new_room = self.check_in_room(state, new_x, new_y)
-        # copy = state.copy()
-        # if not old_room:
-        #     print(str(state))
-        #     print(action)
-        # # assert old_room != False
-        # still_in_room = new_room and old_room and old_room.__eq__(new_room)
-        # # print(still_in_room)
-        # # TODO BUG HERE.  CAN'T MOVE TO OTHER ROOMS WELL
-        # if not still_in_room and (bool(new_room) or bool(old_room)):
-        #     door_points = [(door.x, door.y) for door in state.doors]
-        #     if (state.x, state.y) in door_points or (state.x + dx, state.y + dy) in door_points:
-        #         print(str((state.x, state.y)))
-        #         print("moving to new room")
-        #         # print(str((new_x, new_y)))
-        #
-        #         # if still_in_room:
-        #         blocks = state.account_for_blocks(new_x, new_y, action)
-        #         if blocks is not None:
-        #             copy.blocks = blocks
-        #             copy.x = new_x
-        #             copy.y = new_y
-        # # print(str(copy))
-        # else:
-        #
-        #     blocks = state.account_for_blocks(new_x, new_y, action)
-        #     if blocks is not None:
-        #         # print("here")
-        #         copy.blocks = blocks
-        #         copy.x = new_x
-        #         copy.y = new_y
-        # print(str(copy.blocks[0]))
-        # print(str(copy))
-        return copy
-
-        # x = state.x + dx if still_in_room else state.x
-        # y = state.y + dy if still_in_room else state.y
-        # new_x = state.x + dx
-        # new_y = state.y + dy
-        #
-        # # if still_in_room:
-        # blocks = state.account_for_blocks(new_x, new_y, action)
-        # if blocks is None:
-        #     return copy
-        #
-        # copy.blocks = blocks
-        # return copy
+                    return copy_blocks, i
+        return copy_blocks, -1
 
     @staticmethod
     def check_in_room(rooms, x, y):
@@ -257,8 +215,13 @@ class CleanUpMDP(MDP):
     def visualize_interaction(self):
         from simple_rl.utils import mdp_visualizer as mdpv
         from cleanup_visualizer import draw_state
-        # print(self.init_state)
         mdpv.visualize_interaction(self, draw_state)
+        input("Press anything to quit ")
+
+    def visualize_policy(self, policy):
+        from simple_rl.utils import mdp_visualizer as mdpv
+        from cleanup_visualizer import draw_state
+        mdpv.visualize_policy(self, policy=policy, draw_state=draw_state)
         input("Press anything to quit ")
 
 
@@ -275,7 +238,13 @@ if __name__ == "__main__":
     blocks = [block1]
     doors = [CleanUpDoor(4, 2)]
     mdp = CleanUpMDP(task, rooms=rooms, doors=doors, blocks=blocks)
-    mdp.visualize_interaction()
+    # mdp.visualize_interaction()
+    # ql_agent = QLearningAgent(actions=mdp.get_actions())
+    # mdp.visualize_learning(ql_agent)
+    # mdp.visualize_agent(ql_agent)
+    vi = ValueIteration(mdp)
+    vi.run_vi()
+    mdp.visualize_policy(vi.policy(mdp.get_init_state()))
 
     # vi = ValueIteration(mdp)
     # vi.run_vi()
@@ -355,3 +324,53 @@ if __name__ == "__main__":
 #     self.slip_prob = slip_prob
 #     self.step_cost = step_cost
 #     self.name = name
+
+
+# old_room = self.check_in_room(state, state.x, state.y)
+# new_room = self.check_in_room(state, new_x, new_y)
+# copy = state.copy()
+# if not old_room:
+#     print(str(state))
+#     print(action)
+# # assert old_room != False
+# still_in_room = new_room and old_room and old_room.__eq__(new_room)
+# # print(still_in_room)
+# # TODO BUG HERE.  CAN'T MOVE TO OTHER ROOMS WELL
+# if not still_in_room and (bool(new_room) or bool(old_room)):
+#     door_points = [(door.x, door.y) for door in state.doors]
+#     if (state.x, state.y) in door_points or (state.x + dx, state.y + dy) in door_points:
+#         print(str((state.x, state.y)))
+#         print("moving to new room")
+#         # print(str((new_x, new_y)))
+#
+#         # if still_in_room:
+#         blocks = state.account_for_blocks(new_x, new_y, action)
+#         if blocks is not None:
+#             copy.blocks = blocks
+#             copy.x = new_x
+#             copy.y = new_y
+# # print(str(copy))
+# else:
+#
+#     blocks = state.account_for_blocks(new_x, new_y, action)
+#     if blocks is not None:
+#         # print("here")
+#         copy.blocks = blocks
+#         copy.x = new_x
+#         copy.y = new_y
+# print(str(copy.blocks[0]))
+# print(str(copy))
+# return copy
+
+# x = state.x + dx if still_in_room else state.x
+# y = state.y + dy if still_in_room else state.y
+# new_x = state.x + dx
+# new_y = state.y + dy
+#
+# # if still_in_room:
+# blocks = state.account_for_blocks(new_x, new_y, action)
+# if blocks is None:
+#     return copy
+#
+# copy.blocks = blocks
+# return copy

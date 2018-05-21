@@ -63,8 +63,8 @@ def draw_state(screen,
     width_buffer = scr_width / 10.0
     height_buffer = 30 + (scr_height / 10.0)  # Add 30 for title.
 
-    width = max(cleanup_mdp.legal_states, key=lambda tup: tup[0])[0] + 1
-    height = max(cleanup_mdp.legal_states, key=lambda tup: tup[1])[1] + 1
+    width = cleanup_mdp.width
+    height = cleanup_mdp.height
 
     cell_width = (scr_width - width_buffer * 2) / width
     cell_height = (scr_height - height_buffer * 2) / height
@@ -78,72 +78,72 @@ def draw_state(screen,
     door_locs = set([(door.x + 1, door.y + 1) for door in state.doors])
 
     # Draw the static entities.
-    print(draw_statics)
-    draw_statics = True
-    if draw_statics:
+    # print(draw_statics)
+    # draw_statics = True
+    # if draw_statics:
         # For each row:
-        for i in range(width):
-            # For each column:
-            for j in range(height):
+    for i in range(width):
+        # For each column:
+        for j in range(height):
 
-                top_left_point = width_buffer + cell_width * i, height_buffer + cell_height * j
-                r = pygame.draw.rect(screen, (46, 49, 49), top_left_point + (cell_width, cell_height), 3)
+            top_left_point = width_buffer + cell_width * i, height_buffer + cell_height * j
+            r = pygame.draw.rect(screen, (46, 49, 49), top_left_point + (cell_width, cell_height), 3)
 
-                # if policy and not grid_mdp.is_wall(i+1, height - j):
-                if policy and (i + 1, height - j) in cleanup_mdp.legal_states:
-                    a = policy_dict[i + 1][height - j]
-                    if a not in action_char_dict:
-                        text_a = a
-                    else:
-                        text_a = action_char_dict[a]
-                    text_center_point = int(top_left_point[0] + cell_width / 2.0 - 10), int(
-                        top_left_point[1] + cell_height / 3.0)
-                    text_rendered_a = cc_font.render(text_a, True, (46, 49, 49))
-                    screen.blit(text_rendered_a, text_center_point)
-
-                # if show_value and not grid_mdp.is_wall(i+1, grid_mdp.height - j):
-                if show_value and (i + 1, height - j) in cleanup_mdp.legal_states:
-                    # Draw the value.
-                    val = val_text_dict[i + 1][height - j]
-                    color = mdpv.val_to_color(val)
-                    pygame.draw.rect(screen, color, top_left_point + (cell_width, cell_height), 0)
-                    # text_center_point = int(top_left_point[0] + cell_width/2.0 - 10), int(top_left_point[1] + cell_height/7.0)
-                    # text = str(round(val,2))
-                    # text_rendered = reg_font.render(text, True, (46, 49, 49))
-                    # screen.blit(text_rendered, text_center_point)
-
-                # if grid_mdp.is_wall(i+1, grid_mdp.height - j):
-                if (i + 1, height - j) not in cleanup_mdp.legal_states:
-                    # Draw the walls.
-                    top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
-                    pygame.draw.rect(screen, (94, 99, 99), top_left_point + (cell_width - 10, cell_height - 10), 0)
-
-                if (i + 1, height - j) in door_locs:
-                    # Draw door
-                    # door_color = (66, 83, 244)
-                    door_color = (0, 0, 0)
-                    top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
-                    pygame.draw.rect(screen, door_color, top_left_point + (cell_width - 10, cell_height - 10), 0)
-
+            # if policy and not grid_mdp.is_wall(i+1, height - j):
+            if policy and (i + 1, height - j) in cleanup_mdp.legal_states:
+                a = policy_dict[i + 1][height - j]
+                if a not in action_char_dict:
+                    text_a = a
                 else:
-                    room = cleanup_mdp.check_in_room(state.rooms, i + 1 - 1, height - j - 1)  # Minus 1 for inconsistent x, y
-                    if room:
-                        top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
-                        room_rgb = _get_rgb(room.color)
-                        pygame.draw.rect(screen, room_rgb, top_left_point + (cell_width - 10, cell_height - 10), 0)
+                    text_a = action_char_dict[a]
+                text_center_point = int(top_left_point[0] + cell_width / 2.0 - 10), int(
+                    top_left_point[1] + cell_height / 3.0)
+                text_rendered_a = cc_font.render(text_a, True, (46, 49, 49))
+                screen.blit(text_rendered_a, text_center_point)
 
-                block = cleanup_mdp.find_block(state.blocks, i + 1 - 1, height - j - 1)
-                # print(state)
-                # print(block)
-                if block:
-                    circle_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
-                    block_rgb = _get_rgb(block.color)
-                    pygame.draw.circle(screen, block_rgb, circle_center, int(min(cell_width, cell_height) / 4.0))
+            # if show_value and not grid_mdp.is_wall(i+1, grid_mdp.height - j):
+            if show_value and (i + 1, height - j) in cleanup_mdp.legal_states:
+                # Draw the value.
+                val = val_text_dict[i + 1][height - j]
+                color = mdpv.val_to_color(val)
+                pygame.draw.rect(screen, color, top_left_point + (cell_width, cell_height), 0)
+                # text_center_point = int(top_left_point[0] + cell_width/2.0 - 10), int(top_left_point[1] + cell_height/7.0)
+                # text = str(round(val,2))
+                # text_rendered = reg_font.render(text, True, (46, 49, 49))
+                # screen.blit(text_rendered, text_center_point)
 
-                # Current state.
-                if not show_value and (i + 1, height - j) == (state.x + 1, state.y + 1) and agent_shape is None:
-                    tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
-                    agent_shape = _draw_agent(tri_center, screen, base_size=min(cell_width, cell_height) / 2.5 - 8)
+            # if grid_mdp.is_wall(i+1, grid_mdp.height - j):
+            if (i + 1, height - j) not in cleanup_mdp.legal_states:
+                # Draw the walls.
+                top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
+                pygame.draw.rect(screen, (94, 99, 99), top_left_point + (cell_width - 10, cell_height - 10), 0)
+
+            if (i + 1, height - j) in door_locs:
+                # Draw door
+                # door_color = (66, 83, 244)
+                door_color = (0, 0, 0)
+                top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
+                pygame.draw.rect(screen, door_color, top_left_point + (cell_width - 10, cell_height - 10), 0)
+
+            else:
+                room = cleanup_mdp.check_in_room(state.rooms, i + 1 - 1, height - j - 1)  # Minus 1 for inconsistent x, y
+                if room:
+                    top_left_point = width_buffer + cell_width * i + 5, height_buffer + cell_height * j + 5
+                    room_rgb = _get_rgb(room.color)
+                    pygame.draw.rect(screen, room_rgb, top_left_point + (cell_width - 10, cell_height - 10), 0)
+
+            block = cleanup_mdp.find_block(state.blocks, i + 1 - 1, height - j - 1)
+            # print(state)
+            # print(block)
+            if block:
+                circle_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
+                block_rgb = _get_rgb(block.color)
+                pygame.draw.circle(screen, block_rgb, circle_center, int(min(cell_width, cell_height) / 4.0))
+
+            # Current state.
+            if not show_value and (i + 1, height - j) == (state.x + 1, state.y + 1) and agent_shape is None:
+                tri_center = int(top_left_point[0] + cell_width / 2.0), int(top_left_point[1] + cell_height / 2.0)
+                agent_shape = _draw_agent(tri_center, screen, base_size=min(cell_width, cell_height) / 2.5 - 8)
 
     if agent_shape is not None:
         # Clear the old shape.
