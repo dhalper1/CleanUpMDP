@@ -1,30 +1,31 @@
 import copy
 import random
 
-from simple_rl.agents import QLearningAgent, RandomAgent, RMaxAgent, FixedPolicyAgent, DelayedQAgent
 from simple_rl.mdp.MDPClass import MDP
-from simple_rl.planning import ValueIteration
-from simple_rl.run_experiments import run_agents_on_mdp
 
-# from cleanup_block import CleanUpBlock
-# from cleanup_door import CleanUpDoor
-# from cleanup_room import CleanUpRoom
-
-# TODO UNSURE IF I'M SUPPOSED TO BE COPYING STUFF OR NOT
 from cleanup_task import CleanUpTask
 
 
 class CleanUpMDP(MDP):
     ACTIONS = ["up", "down", "left", "right"]
-    CLASSES = ["room", "block", "door"]
+    CLASSES = ["room", "block", "door"]  # TODO NOTE: CURRENTLY UNUSED
 
-    # TODO NOTE MAYBE ADD AGENT CLASS.  SEE THE TAXI OOMDP CLASS
+    # TODO NOTE MAYBE ADD AGENT CLASS.
 
     def __init__(self, task, init_loc=(0, 0), blocks=[], rooms=[], doors=[], rand_init=False, gamma=0.99,
                  init_state=None):
+        '''
+        :param task: The given CleanUpTask for this MDP
+        :param init_loc: Initial agent location
+        :param blocks: List of blocks
+        :param rooms: List of rooms
+        :param doors: List of doors
+        :param rand_init: random initialization boolean
+        :param gamma: gamma factor
+        :param init_state: Initial state if given
+        '''
         from cleanup_state import CleanUpState
         self.task = task
-        # self.rand_init = rand_init
         if rand_init:
             block_loc = [(x, y) for block in blocks for (x, y) in (block.x, block.y)]
             init_loc = random.choice(
@@ -44,7 +45,11 @@ class CleanUpMDP(MDP):
         # TODO CREATE A DICTIONARY FROM ROOMS TO LEGAL STATES IN ROOMS WITHOUT DOORS
 
     def _transition_func(self, state, action):
-        # TODO NOTE.  IT'S NOT POSSIBLE TO MOVE MULTIPLE BLOCKS AT ONCE AS OF NOW
+        '''
+        :param state: The state
+        :param action: The action
+        :return: The next state you get if in state and perform action
+        '''
         dx, dy = self.transition(action)
         new_x = state.x + dx
         new_y = state.y + dy
@@ -52,26 +57,19 @@ class CleanUpMDP(MDP):
         if (new_x, new_y) not in self.legal_states:
             return copy
 
-
-
         visited_set = set()
         blocks, i = self._account_for_blocks(new_x, new_y, state, action, visited_set)
-        # if not blocks:
-        #     return copy
         if blocks is None:
             return copy
-        # new_blocks = False
-        # while i >= 0 and not CleanUpState.list_eq(blocks, new_blocks):
-        while i >= 0: # TODO TRYING TO MAKE THIS BIT WORK
+        while i >= 0:
             # This accounts for multiple blocks
             visited_set.add(i)
             if blocks[i].x == copy.blocks[i].x and blocks[i].y == copy.blocks[i].y:
                 return copy
             copy.blocks = blocks
-            # TODO NOTE:  IT'S NOT IGNORING ITSELF AS A BLOCK CURRENTLY SO GOTTA SOMEHOW REMOVE IT FROM THE LIST
             blocks, i = self._account_for_blocks(blocks[i].x, blocks[i].y, copy, action, visited_set)
             if blocks is None:
-                return copy
+                return state.copy()
 
         # if blocks is not None:
         if i >= 0 and blocks[i].x == copy.blocks[i].x and blocks[i].y == copy.blocks[i].y:
@@ -88,41 +86,29 @@ class CleanUpMDP(MDP):
             copy.y = new_y
 
         return copy
-        # dx, dy = self.transition(action)
-        # new_x = state.x + dx
-        # new_y = state.y + dy
-        # copy = state.copy()
-        # if (new_x, new_y) not in self.legal_states:
-        #     return copy
-        #
-        # blocks, i = self._account_for_blocks(new_x, new_y, state, action)
-        #
-        # if not blocks:
-        #     return copy
-        # if blocks is not None:
-        #     if i >= 0 and blocks[i].x == state.blocks[i].x and blocks[i].y == state.blocks[i].y:
-        #         return copy
-        #
-        #     old_room = self.check_in_room(state.rooms, state.x, state.y)
-        #     new_room = self.check_in_room(state.rooms, new_x, new_y)
-        #     back_x = state.x - dx
-        #     back_y = state.y - dy
-        #     if (state.x, state.y) in self.door_locs or (new_x, new_y) in self.door_locs or \
-        #             (back_x, back_y) in self.door_locs or old_room.__eq__(new_room):
-        #         copy.blocks = blocks
-        #         copy.x = new_x
-        #         copy.y = new_y
-        #
-        # return copy
 
     @staticmethod
     def find_block(blocks, x, y):
+        '''
+        :param blocks: The list of blocks
+        :param x: x coordinate in question
+        :param y: y coordinate in question
+        :return: The block (x, y) is associated with.  Or False if no association found.
+        '''
         for block in blocks:
             if x == block.x and y == block.y:
                 return block
         return False
 
     def _account_for_blocks(self, x, y, state, action, visited_set):
+        '''
+        :param x: X coordinate of the agent or block that just moved to that location
+        :param y: Y coordinate of the agent or block that just moved to that location
+        :param state: The current state
+        :param action: The current action
+        :param visited_set: The set of indices blocks that have already been visited
+        :return:
+        '''
         copy_blocks = state.blocks[:]
         if x == state.x and y == state.y:
             return copy_blocks, -1
@@ -151,11 +137,20 @@ class CleanUpMDP(MDP):
                             block.x = new_x
                             block.y = new_y
                             copy_blocks[i] = block
+                        else:
+                            return None, -1
                     return copy_blocks, i
         return copy_blocks, -1
 
     @staticmethod
     def check_in_room(rooms, x, y):
+        '''
+        :param rooms: A list of rooms
+        :param x: x coordinate
+        :param y: y coordinate
+        :return: Checks which room (x, y) is in.  Returns the room if the room is found.
+                 Returns False otherwise.
+        '''
         for room in rooms:
             if (x, y) in room.points_in_room:
                 return room
@@ -163,6 +158,10 @@ class CleanUpMDP(MDP):
 
     @staticmethod
     def transition(action):
+        '''
+        :param action: The action
+        :return: A tuple for the delta x and y direction associated with that action
+        '''
         dx = 0
         dy = 0
         if action == "up":
@@ -180,6 +179,12 @@ class CleanUpMDP(MDP):
         return dx, dy
 
     def _reward_func(self, state, action):
+        '''
+        :param state: The state you are in before performing the action
+        :param action: The action you would like to perform in the state
+        :return: A double indicating how much reward to assign to that state.
+                 1000.0 for the terminal state.  -1.0 for every other state.
+        '''
         next_state = self.transition_func(state, action)
         if self.is_terminal(self.task, state):
             return 0.0
@@ -187,6 +192,11 @@ class CleanUpMDP(MDP):
 
     @staticmethod
     def is_terminal(task, next_state):
+        '''
+        :param task: A CleanUpTask class
+        :param next_state: The state we want to check is terminal
+        :return: A boolean indicating whether the state is terminal or not
+        '''
         if task.block_name is None:
             task_block = [block for block in next_state.blocks if block.color == task.block_color][0]
         else:
@@ -223,12 +233,6 @@ class CleanUpMDP(MDP):
         mdpv.visualize_value(self, draw_state)
         input("Press anything to quit ")
 
-    # def visualize_learning(self, agent, delay=0.0):
-    #     from simple_rl.utils import mdp_visualizer as mdpv
-    #     from cleanup_visualizer import draw_state
-    #     mdpv.visualize_learning(self, agent, draw_state, delay=delay)
-    #     input("Press anything to quit")
-
     def visualize_interaction(self):
         from simple_rl.utils import mdp_visualizer as mdpv
         from cleanup_visualizer import draw_state
@@ -250,12 +254,12 @@ if __name__ == "__main__":
     task = CleanUpTask("green", "red")
     room1 = CleanUpRoom("room1", [(x, y) for x in range(5) for y in range(3)], "blue")
     block1 = CleanUpBlock("block1", 1, 1, color="green")
-    block2 = CleanUpBlock("block2", 2, 1, color="purple")
+    block2 = CleanUpBlock("block2", 2, 4, color="purple")
+    block3 = CleanUpBlock("block3", 8, 1, color="orange")
     room2 = CleanUpRoom("room2", [(x, y) for x in range(5, 10) for y in range(3)], color="red")
     room3 = CleanUpRoom("room3", [(x, y) for x in range(0, 10) for y in range(3, 6)], color="yellow")
     rooms = [room1, room2, room3]
-    blocks = [block1, block2]
-    # doors = [CleanUpDoor(4, 2)]
+    blocks = [block1, block2, block3]
     doors = [CleanUpDoor(4, 0), CleanUpDoor(3, 2)]
     mdp = CleanUpMDP(task, rooms=rooms, doors=doors, blocks=blocks)
     mdp.visualize_interaction()

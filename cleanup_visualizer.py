@@ -194,3 +194,7 @@ def _get_rgb(color):
         return 255, 255, 0
     if color == "purple":
         return 117, 50, 219
+    if color == "orange":
+        return 237, 138, 18
+    if color == "pink":
+        return 247, 2, 243

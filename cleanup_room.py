@@ -1,7 +1,6 @@
 # import cleanup_state
 from cleanup_state import CleanUpState
 
-
 class CleanUpRoom:
     def __init__(self, name, points_in_room=[(x + 1, y + 1) for x in range(24) for y in range(24)], color="blue"):
         self.name = name
@@ -23,10 +22,6 @@ class CleanUpRoom:
 
         return self.name == other.name and self.color == other.color and \
                CleanUpState.list_eq(self.points_in_room, other.points_in_room)
-
-    @staticmethod
-    def class_name():
-        return "room"
 
     def __str__(self):
         return "color: " + self.color + ", points: " + " ".join(
